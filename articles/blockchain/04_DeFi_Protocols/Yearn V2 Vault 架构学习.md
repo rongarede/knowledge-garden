@@ -78,6 +78,14 @@ IERC20(want).approve(cDAI, 0);       // 先归零
 IERC20(want).approve(cDAI, _want);   // 再授权新金额
 ```
 
+### ERC-4626 inflation attack（通胀攻击）
+
+攻击场景：攻击者存 1 wei 拿到 1 份额，然后直接 transfer 大量资金到 Vault（不走 deposit），操纵 totalAssets 极大而 totalSupply 极小。后续存款人因整数除法向下取整拿到 0 份额，资金被攻击者吞掉。
+
+防御方案：
+1. **dead shares**：部署时预存资金并销毁对应份额，Vault 不会从空状态开始
+2. **虚拟偏移量**：公式中加底数（如 OpenZeppelin 的 `+1`），防止极端值操纵
+
 ### withdraw 的 shares 未赋值 bug
 
 Vault.sol 的 `withdraw` 函数中，`shares` 在第 74 行被用于扣减授权额度，但直到第 80 行才被赋值。此时 `shares = 0`，导致授权额度没有被扣减，被授权方可以无限次取款。
